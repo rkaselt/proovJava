@@ -3,10 +3,10 @@ package com.example.proovjava.service;
 import com.example.proovjava.entity.Car;
 import com.example.proovjava.repository.CarRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,29 +19,26 @@ public class CarService {
     }
 
     public List<Car> searchCars(String find, String sort) {
-        List<Car> cars = carRepository.findAll();
+        if (find == null || find.isEmpty()) {
+            if (sort != null && !sort.isEmpty()) {
+                String[] sortParams = sort.split(":");
+                String field = sortParams[0];
+                Sort.Direction direction = Sort.Direction.fromString(sortParams[1]);
 
-        List<Car> filteredCars = cars.stream()
-                .filter(car -> car.getMake().toLowerCase().contains(find.toLowerCase()) ||
-                        car.getModel().toLowerCase().contains(find.toLowerCase()))
-                .collect(Collectors.toList());
-
-        String[] sortParams = sort.split(":");
-        String sortField = sortParams[0];
-        boolean ascending = "asc".equalsIgnoreCase(sortParams[1]);
-
-        filteredCars.sort((car1, car2) -> {
-            int comparison;
-            if ("make".equals(sortField)) {
-                comparison = car1.getMake().compareTo(car2.getMake());
-            } else if ("model".equals(sortField)) {
-                comparison = car1.getModel().compareTo(car2.getModel());
+                return carRepository.findAll(Sort.by(direction, field));
             } else {
-                return 0;
+                return carRepository.findAll();
             }
-            return ascending ? comparison : -comparison;
-        });
+        }
 
-        return filteredCars;
+        if (sort != null && !sort.isEmpty()) {
+            String[] sortParams = sort.split(":");
+            String field = sortParams[0];
+            Sort.Direction direction = Sort.Direction.fromString(sortParams[1]);
+
+            return carRepository.findByMakeContainingIgnoreCaseOrModelContainingIgnoreCase(find, find, Sort.by(direction, field));
+        } else {
+            return carRepository.findByMakeContainingIgnoreCaseOrModelContainingIgnoreCase(find, find);
+        }
     }
 }

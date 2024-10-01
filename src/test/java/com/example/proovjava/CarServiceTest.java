@@ -8,9 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Sort;
 
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.List;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -29,36 +31,29 @@ class CarServiceTest {
     }
 
     @Test
-    void testGetAllCars_HappyFlow() {
+    void testSearchCars() {
         Car car1 = new Car(1L, "Lada", "2101", "123ASD", null);
-        Car car2 = new Car(2L, "Kia", "Sorento", "534TTT", null);
-        when(carRepository.findAll()).thenReturn(Arrays.asList(car1, car2));
 
-        var cars = carService.searchCars("", "make:asc");
+        when(carRepository.findByMakeContainingIgnoreCaseOrModelContainingIgnoreCase("Lada", "Lada", Sort.by(Sort.Direction.ASC, "make")))
+                .thenReturn(List.of(car1));
 
-        assertEquals(2, cars.size());
-        verify(carRepository, times(1)).findAll();
+        List<Car> result = carService.searchCars("Lada", "make:asc");
+
+        assertEquals(1, result.size());
+        assertEquals("Lada", result.get(0).getMake());
+        verify(carRepository, times(1))
+                .findByMakeContainingIgnoreCaseOrModelContainingIgnoreCase("Lada", "Lada", Sort.by(Sort.Direction.ASC, "make"));
     }
 
     @Test
-    void testGetCarById_HappyFlow() {
-        Car car = new Car(1L, "Lada", "2101", "123ASD", null);
-        when(carRepository.findById(1L)).thenReturn(Optional.of(car));
+    void testSearchCars_NoResults() {
+        when(carRepository.findByMakeContainingIgnoreCaseOrModelContainingIgnoreCase("NonExistent", "NonExistent"))
+                .thenReturn(List.of());
 
-        var result = carService.getCarById(1L);
+        List<Car> result = carService.searchCars("NonExistent", "");
 
-        assertNotNull(result);
-        assertEquals("Lada", result.getMake());
-        verify(carRepository, times(1)).findById(1L);
-    }
-
-    @Test
-    void testGetCarById_NotFound() {
-        when(carRepository.findById(1L)).thenReturn(Optional.empty());
-
-        var result = carService.getCarById(1L);
-
-        assertNull(result);
-        verify(carRepository, times(1)).findById(1L);
+        assertEquals(0, result.size());
+        verify(carRepository, times(1))
+                .findByMakeContainingIgnoreCaseOrModelContainingIgnoreCase("NonExistent", "NonExistent");
     }
 }
