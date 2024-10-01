@@ -20,7 +20,9 @@ cd backend-app
 ``` 
 
 ### 2. Configure PostgreSQL Database
+```bash
 CREATE DATABASE userdb;
+``` 
 
 Modify the application.properties file located in src/main/resources/ with your PostgreSQL credentials:
 
